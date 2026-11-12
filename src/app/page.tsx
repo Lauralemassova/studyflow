@@ -28,14 +28,20 @@ export default function Home() {
             ["📝", "Assignments", "Manage your tasks and deadlines"],
             ["📅", "Calendar", "See your upcoming deadlines"],
           ].map(([icon, title, description]) => (
-            <div
+            <a
+  href={
+    title === "Dashboard" ? "/dashboard" :
+    title === "Subjects" ? "/subjects" :
+    title === "Assignments" ? "/assignments" :
+    "/calendar"
+  }
               key={title}
               className="rounded-2xl bg-white p-7 shadow-sm"
             >
               <div className="mb-4 text-3xl">{icon}</div>
               <h3 className="mb-2 text-xl font-semibold">{title}</h3>
               <p className="text-slate-500">{description}</p>
-            </div>
+            </a>
           ))}
         </div>
       </div>
