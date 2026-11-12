@@ -17,14 +17,28 @@ export default function CalendarPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date(2026, 10, 1));
 
+ 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("studyflow-assignments");
-      setAssignments(saved ? JSON.parse(saved) : []);
-    } catch {
-      setAssignments([]);
+    async function loadAssignments() {
+      try {
+        const response = await fetch("/api/assignments", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load assignments");
+        }
+
+        const data: Assignment[] = await response.json();
+        setAssignments(data);
+      } catch (error) {
+        console.error("Failed to load assignments:", error);
+      }
     }
+
+    loadAssignments();
   }, []);
+
 
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
@@ -91,9 +105,12 @@ export default function CalendarPage() {
                 ? `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
                 : "";
 
-              const dayAssignments = assignments.filter(
-                (assignment) => assignment.dueDate === dateString
-              );
+              
+const dayAssignments = assignments.filter(
+  (assignment) =>
+    assignment.dueDate?.slice(0, 10) === dateString
+);
+
 
               return (
                 <div

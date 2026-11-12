@@ -16,14 +16,28 @@ type Assignment = {
 export default function DashboardPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
 
+
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("studyflow-assignments");
-      setAssignments(saved ? JSON.parse(saved) : []);
-    } catch {
-      setAssignments([]);
+    async function loadAssignments() {
+      try {
+        const response = await fetch("/api/assignments", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load assignments");
+        }
+
+        const data: Assignment[] = await response.json();
+        setAssignments(data);
+      } catch (error) {
+        console.error("Failed to load assignments:", error);
+      }
     }
+
+    loadAssignments();
   }, []);
+
 
   const completed = assignments.filter(
     (item) => item.status === "Completed"
