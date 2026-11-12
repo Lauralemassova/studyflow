@@ -22,45 +22,89 @@ export default function SubjectsPage() {
   const [name, setName] = useState("");
   const [color, setColor] = useState(colors[0].value);
   const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("studyflow-subjects");
-      if (saved) setSubjects(JSON.parse(saved));
-    } catch {
-      console.error("Could not load subjects");
+    async function loadSubjects() {
+      try {
+        const response = await fetch("/api/subjects", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load subjects");
+        }
+
+        const data: Subject[] = await response.json();
+        setSubjects(data);
+      } catch {
+        setError("Could not load subjects. Please try again.");
+      } finally {
+        setLoaded(true);
+      }
     }
-    setLoaded(true);
+
+    loadSubjects();
   }, []);
 
-  useEffect(() => {
-    if (loaded) {
-      localStorage.setItem(
-        "studyflow-subjects",
-        JSON.stringify(subjects)
-      );
-    }
-  }, [subjects, loaded]);
-
-  function addSubject(e: React.FormEvent<HTMLFormElement>) {
+  async function addSubject(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
+    if (!name.trim() || saving) return;
 
-    if (!name.trim()) return;
+    setSaving(true);
+    setError("");
 
-    setSubjects([
-      ...subjects,
-      {
-        id: crypto.randomUUID(),
-        name: name.trim(),
-        color,
-      },
-    ]);
+    try {
+      const response = await fetch("/api/subjects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          color,
+        }),
+      });
 
-    setName("");
+      if (!response.ok) {
+        throw new Error("Failed to create subject");
+      }
+
+      const subject: Subject = await response.json();
+
+      setSubjects((previous) => [...previous, subject]);
+      setName("");
+    } catch {
+      setError("Could not create subject. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function deleteSubject(id: string) {
-    setSubjects(subjects.filter((subject) => subject.id !== id));
+  async function deleteSubject(id: string) {
+    if (!window.confirm("Delete this subject?")) return;
+
+    setError("");
+
+    try {
+      const response = await fetch(
+        `/api/subjects/${encodeURIComponent(id)}`,
+        { method: "DELETE" }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete subject");
+      }
+
+      setSubjects((previous) =>
+        previous.filter((subject) => subject.id !== id)
+      );
+    } catch {
+      setError("Could not delete subject. Please try again.");
+    }
   }
 
   return (
@@ -73,6 +117,15 @@ export default function SubjectsPage() {
         <p className="mt-4 text-gray-600">
           Organize and manage your academic subjects.
         </p>
+
+        {error && (
+          <p
+            role="alert"
+            className="mt-4 rounded-xl bg-red-50 p-4 text-red-700"
+          >
+            {error}
+          </p>
+        )}
 
         <form
           onSubmit={addSubject}
@@ -87,6 +140,7 @@ export default function SubjectsPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Subject name"
             maxLength={80}
+            required
             className="mt-4 w-full rounded-xl border border-gray-300 p-3 text-gray-900"
           />
 
@@ -110,9 +164,10 @@ export default function SubjectsPage() {
 
           <button
             type="submit"
-            className="mt-6 rounded-xl bg-violet-600 px-6 py-3 font-semibold text-white hover:bg-violet-700"
+            disabled={saving}
+            className="mt-6 rounded-xl bg-violet-600 px-6 py-3 font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
           >
-            + Add Subject
+            {saving ? "Saving..." : "+ Add Subject"}
           </button>
         </form>
 
@@ -142,7 +197,7 @@ export default function SubjectsPage() {
           ))}
         </div>
 
-        {loaded && subjects.length === 0 && (
+        {loaded && subjects.length === 0 && !error && (
           <p className="mt-8 text-center text-gray-500">
             No subjects yet. Add your first subject above!
           </p>
