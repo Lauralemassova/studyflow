@@ -1,3 +1,8 @@
+# StudyFlow
+
+StudyFlow is a student planner designed to organize subjects, manage assignments, track academic progress, and monitor upcoming deadlines.
+
+Live application: https://studyflow-production-196aedec.up.railway.app
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
